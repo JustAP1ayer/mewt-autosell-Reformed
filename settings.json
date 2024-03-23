@@ -1,7 +1,8 @@
 {
     "COOKIE": "",
     "SELL_METHOD": "",
-    
+    "KEEP_SERIALS": 20,
+    "KEEPCOPIES": 5,
     "CUSTOM_VALUES": {},
     "WHITELIST":[],
     "BLACKLIST": [],
