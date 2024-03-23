@@ -1,10 +1,7 @@
 {
     "COOKIE": "",
-    "SELL_METHOD": "",
     "KEEP_SERIALS": 20,
     "KEEP_COPIES": 5,
-    "CUSTOM_VALUES": {},
-    "WHITELIST":[],
     "BLACKLIST": [],
     "WEBHOOK": {
         "ENABLED": false,
