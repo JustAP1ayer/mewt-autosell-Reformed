@@ -1,5 +1,6 @@
+#i gave up frames uses mewt too much in his code cba
 try:
-    import requests, os, sys, json, time, threading, copy
+    import requests, os, sys, json, time, threading, copy, math
     from colorama import Fore, Style
     from rgbprint import gradient_print
 except ModuleNotFoundError as error:
@@ -9,6 +10,7 @@ except ModuleNotFoundError as error:
 settings = json.load(open("settings.json", "r"))
 collectable_types = [
     8,
+    41,
     42,
     43,
     44,
@@ -24,12 +26,8 @@ collectable_types = [
     69,
     72,
     70,
-    71
-]
-sell_methods = [
-    "CUSTOM",
-    "UNDERCUT",
-    "MEWTVALUES"
+    71,
+    72,
 ]
 
 class MewtStyle():
@@ -40,17 +38,14 @@ class Webhook:
     def __init__(self, webhook):
         self.webhook = webhook
 
-    def post(self, buyer_name, buyer_id, item_name, item_id, item_thumbnail, price):
+    def post(self, buyer_name, buyer_id, item_name, item_id, price):
         payload = {
             "embeds": [
                 {
                     "title": f"Sold {item_name}!",
-                    "description": f"`earned`: **{price}**\n`buyer`: **[{buyer_name}](https://www.roblox.com/users/{buyer_id})**",
+                    "description": f"`Earned`: **{price}**\n`Buyer`: **[{buyer_name}](https://www.roblox.com/users/{buyer_id})**",
                     "url": f"https://www.roblox.com/catalog/{item_id}",
-                    "color": 16234703,
-                    "thumbnail": {
-                        "url": item_thumbnail
-                    }
+                    "color": 16234703
                 }
             ]
         }
@@ -60,27 +55,46 @@ class Webhook:
 
 class Client:
     def __init__(self):
-        self.version = "1.0.1"
-        self.title = (f"""
-                                                                d8,                              
-                                       d8P                     `8P                               
-                                    d888888P                                      
-  88bd8b,d88b  d8888b ?88   d8P  d8P  ?88'      ?88,  88P      d88   d888b8b  ?88   d8P d888b8b  
-  88P'`?8P'?8bd8b_,dP d88  d8P' d8P'  88P        `?8bd8P'      ?88  d8P' ?88  d88  d8P'd8P' ?88  
- d88  d88  88P88b     ?8b ,88b ,88'   88b        d8P?8b,        88b 88b  ,88b ?8b ,88' 88b  ,88b 
-d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?888P'  `?88P'`88b
-                                                                 )88                             
-                                                                ,88P                             
-                                                             `?888P
-                      
-                        discord.gg/mewt & discord.gg/javaw - v{self.version}                              
-                      """)
+        self.version = "1"
+        self.title = (f"""⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡘⢧⡀⠀⠀⢰⣶⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡾⠁⠀⠙⢦⡀⢸⡏⠻⢦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠃⠀⠀⠀⠀⠙⠺⡇⠀⠀⠙⠳⠦⡀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣠⠤⢤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⡖⠶⠶⠒⠒⠒⠒⠓⠂⠀⠀⠀⠀⠀⠐⠒⠚⠛⠋⠉⠉⠉⠁⠀⠀⠀⠀⠉⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠙⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠙⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⢀⣠⣄⡀⠀⠀⠀⠀⢀⣠⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠃⠀⠀⠀⣰⠏⢉⣼⣧⠀⠀⠀⢠⣿⣅⠀⠀⢹⡆⠀⠀⠀⠀⠀⠀⢠⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡯⠀⢸⣿⣿⠀⠀⠀⣾⣿⣿⠀⠀⠀⣷⠀⠀⠀⠀⠀⢀⡞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡴⠛⠁⢀⠈⠁⠀⢸⣿⣿⠀⠀⠀⢹⣿⣿⠀⠀⠀⠉⠀⠀⠀⠈⠛⢿⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⡀⠀⠀⢸⣧⣴⣀⣄⠉⣁⠐⣳⢀⣨⣟⠋⠀⠀⣀⣴⣠⠀⠀⠀⢀⡼⠃⠀⠀⠀⢰⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⢶⡎⢳⣌⡉⠀⠀⠙⠻⣯⣉⢉⣿⠄⠀⠀⢉⣬⡿⠃⠀⠀⢾⡀⠀⠀⠀⠀⣸⠃⠙⠳⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣇⣀⡈⠙⠛⢳⡶⣤⣤⣭⣽⣭⡴⣶⠛⣿⣥⡄⢠⣤⣤⣼⡇⠀⡄⣾⠀⣿⠀⠀⠀⠀⠙⢦⡄⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢰⡟⠛⠺⠷⢤⣤⣿⣿⣿⣤⡾⠟⣃⡿⠀⠀⠀⠀⠀⠀⠘⠃⡿⢀⡗⠀⠀⠀⠀⠀⠈⢻⣆⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣆⠀⠀⠀⢸⣏⣌⡙⡇⠀⠀⠺⣦⠀⠀⠀⠀⠀⠀⣼⣄⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠹⣇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢙⣷⠀⠀⠀⠛⠛⠛⠁⠀⠀⣾⠁⠀⠀⠀⠀⠀⢰⡟⢹⣆⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣆⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡏⠁⠀⠀⠀⠀⣤⠀⠀⠀⢰⣾⠀⠀⠀⠀⠀⣠⡟⠀⠀⠿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⡀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⡟⠛⠛⠀⣠⡟⠀⠀⠀⢸⢹⡄⠀⠀⢀⡴⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⡇⣿⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⣿⡇⠀⠀⠀⢸⠸⣇⣀⡴⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⢻⠀⡄
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⠀⠀⠀⣿⠀⠀⠀⠀⣿⠀⠻⣏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⢼⣰⡇
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡶⠶⠛⠋⣿⠀⠀⢠⡏⠀⠀⠀⠀⡿⠀⠀⠙⢷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⢁⡿⠾⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⠿⠀⠀⠀⣿⠀⠀⣸⠃⠀⠀⠀⢠⡏⠀⠀⠀⠀⢹⡷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠟⠈⠁⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⣟⠁⠀⠀⠀⠀⢶⣿⠀⢠⡟⠀⠀⠀⠀⢸⠅⠀⠀⠀⠀⢻⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡾⠋⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡾⠃⠀⠀⠀⠀⠘⣿⢀⡾⠁⠀⠀⠀⠀⣿⠀⠀⠀⠀⣴⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⠿⢦⣄⡀⠀⠀⠀⠀⡏⣼⠃⠀⠀⠀⠀⢀⡿⠀⠀⠀⠀⢹⡇⠀⠀⠀⠀⠀⠀⠀⠀⢠⣄⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢀⣴⠟⠓⠤⡀⠈⠹⣦⡀⠀⠐⣷⣷⡇⠀⢠⡄⠀⣼⣃⣀⣀⣀⠀⠀⡇⠀⠀⠀⠲⣄⡀⠀⠀⠀⣈⡽⠟⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⠿⠅⣀⠀⠀⠈⠳⡄⠸⣧⠀⣠⡿⠿⢷⢤⣬⣿⡾⠛⠉⠉⠉⠉⠷⣴⡇⠀⠀⠀⠀⠈⠙⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⣠⡾⢁⡀⠀⠀⠑⢄⠀⠀⠸⣄⣿⠟⠉⠀⠀⠀⠀⠀⢸⣇⠤⠤⠦⠤⠤⢀⣹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⢀⣴⠋⠀⠀⠈⠑⢄⠀⠀⢣⠀⣠⡟⠁⠀⠀⠀⠀⠀⠀⠀⢸⠇⠀⠀⠀⠀⠀⠀⠉⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⢰⡏⣴⠉⠑⣢⣄⠀⠀⢳⣀⣴⠟⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⡀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠈⠿⣏⠀⠀⢿⠀⣳⣤⡶⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣀⣀⡀⠀⠀⠀⠀⢹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠋⠙⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠉⠓⠢⣼⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣀⠀⣀⣀⡀⠀⣸⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⢰⡇⠀⠀⢿⢑⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣷⣀⣤⣼⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        :3""")
 
         self.ready = False    
-        self.sell_method = settings["SELL_METHOD"]
-        self.custom_values = settings["CUSTOM_VALUES"]
-        self.mewtvalue_multiplier = settings["MEWTVALUE_MULTIPLIER"]
-        self.whitelist = settings["WHITELIST"]
         self.blacklist = settings["BLACKLIST"]
         self.webhook_enabled = settings["WEBHOOK"]["ENABLED"]
         self.webhook_url = settings["WEBHOOK"]["URL"]
@@ -94,8 +108,6 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
         self.last_transaction_id = None
         self.raw_inventory = []
         self.onsale = []
-        self.mewt_collection = []
-        self.mewt_collection_reversed = []
         
 
         self.id_to_name = {}
@@ -116,20 +128,6 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
         if self.webhook_enabled:
             self.webhook = Webhook(self.webhook_url)
 
-        if(self.sell_method not in sell_methods):
-            print("Invalid sell method, accepted sale here are the accepted sell methods; " + ", ".join([value for value in sell_methods]))
-            time.sleep(1)
-            raise SystemExit
-        
-        if(self.sell_method == "MEWTVALUES" and self.mewtvalue_multiplier < 1):
-            print("Your mewt value multiplier is less than 1, it needs to be above one or you will loose robux")
-            time.sleep(1)
-            raise SystemExit
-        
-        if(self.sell_method == "CUSTOM" and len(self.custom_values) <= 0):
-            print("You need add custom values to support your sell method")
-            time.sleep(1)
-            raise SystemExit
 
 
         self.verify_cookie()
@@ -139,11 +137,10 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
         
         self.infinite_thread(self.update_status, 1)
         self.infinite_thread(self.set_token, 200)
-        self.infinite_thread(self.fetch_mewt_collection, 10 * 60)
 
         self.logs.append(f"Logged in as {self.client['name']}({self.client['id']})")
         self.logs.append("Fetching inventory this may take a minute, please wait.")
-        self.infinite_thread(self.update_inventory, 15 * 60)
+        self.infinite_thread(self.fetch_inventory)
         self.infinite_thread(self.sell_all_items, 5)
         self.infinite_thread(self.scan_recent_transactions, 3 * 60)
 
@@ -153,40 +150,10 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
         print(Fore.RESET + Style.RESET_ALL)
         print(Style.BRIGHT + f"> Current User: {MewtStyle.MAIN}{Style.BRIGHT}{self.client['name']}{Fore.WHITE}{Style.BRIGHT} ")
         print(Style.BRIGHT + f"> Resellable Items: {MewtStyle.MAIN}{Style.BRIGHT}{self.resellable_count}{Fore.WHITE}{Style.BRIGHT} ")
-        print(Style.BRIGHT + f"> Sell Method: {MewtStyle.MAIN}{Style.BRIGHT}{self.sell_method}{Fore.WHITE}{Style.BRIGHT} ")
         print()
         print(Style.BRIGHT + f"> Logs: {MewtStyle.MAIN}{Style.BRIGHT}\n" + "\n".join(log for log in self.logs[-10:]) + f"{Fore.WHITE}{Style.BRIGHT}")
 
-    def fetch_mewt_collection(self):
-        conn = requests.get("https://mewt.manlambo13.repl.co/collectables")
-        if(conn.status_code == 200):
-            data = conn.json()
-            self.mewt_collection = { item["id"]: item for item in data }
-            self.mewt_collection_reversed = { item["collectibleItemId"]: item for item in data }
-            self.logs.append("Successfully fetched mewt collectable database")
-        else:
-            time.sleep(5)
-            return self.fetch_mewt_collection()
     
-    def find_mewtdata_by_id(self, id):
-        if len(self.mewt_collection) <= 0:
-            time.sleep(1)
-            return self.find_mewtdata_by_id(id)
-        
-        if id in self.mewt_collection:
-            return self.mewt_collection[id]
-        else:
-            return None
-        
-    def find_mewtdata_by_collectable_item_id(self, collectibleItemId):
-        if len(self.mewt_collection_reversed) <= 0:
-            time.sleep(1)
-            return self.find_mewtdata_by_id(collectibleItemId)
-        
-        if collectibleItemId in self.mewt_collection_reversed:
-            return self.mewt_collection_reversed[collectibleItemId]
-        else:
-            return None
 
     def verify_cookie(self):
         conn = self.session.get("https://users.roblox.com/v1/users/authenticated")
@@ -234,21 +201,18 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
                     if assetType != 'Asset':
                         continue
 
-                    mewt_data = self.find_mewtdata_by_id(int(assetId))
                     
-                    if not mewt_data:
-                        continue
 
                     self.logs.append(f"{agentName} bought {assetName}, you earned {amount}!")
                     if self.webhook_enabled:
-                        self.webhook.post(agentName, agentId, assetName, assetId, mewt_data["thumbnail"], amount)
+                        self.webhook.post(agentName, agentId, assetName, assetId,  amount)
             else:
-                time.sleep(5)
+                time.sleep(15)
                 return self.scan_recent_transactions()
 
         except Exception as error:
             print(error)
-            time.sleep(5)
+            time.sleep(15)
             return self.scan_recent_transactions()
 
     def fetch_inventory(self, assettype, cursor = "", data = []):
@@ -313,28 +277,13 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
             time.sleep(5)
             return self.fetch_reseller(collectableItemId)
 
-    def fetch_item_details_chunks(self, items):
-        chunks = []
-        data = []
-        collectable_items = []
-
-        for item in items:
-            mewt_data = self.find_mewtdata_by_id(int(item))
-            if mewt_data:
-                collectable_items.append(mewt_data["collectibleItemId"])
-
-        while len(collectable_items) > 0:
-            chunks.append(collectable_items[:120])
-            collectable_items = collectable_items[120:]
-
-        for chunk in chunks:
-            new_data = self.fetch_item_details(chunk)
-            data = data + new_data
-
-        return data
     
     def sell_item(self, price, collectibleItemId, collectibleInstanceId, collectibleProductId):
         try:
+            number = price * 0.5  # Fees
+            while not number >= math.ceil(number):
+                price = price - 1
+                number = price * 0.5
             payload = {
                 "collectibleProductId": collectibleProductId,
                 "isOnSale": True,
@@ -352,113 +301,22 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
             time.sleep(10)
             return self.sell_item(price, collectibleItemId, collectibleInstanceId, collectibleProductId)
         
-    def sell_all_items(self):
-        if(len(self.inventory) > 0):
-            try:
-                inventory = copy.deepcopy(self.inventory)
-                price_cache = {}
-        
-                for collectibleItemId, collectibleInstanceIds in inventory.items():
-                    for collectibleInstanceId in collectibleInstanceIds:
-                        if collectibleInstanceId in self.onsale:
-                            if collectibleInstanceId in self.inventory[collectibleItemId]:
-                                self.inventory[collectibleItemId].remove(collectibleInstanceId)
-                            continue
-
-                        price = None
-
-                        if self.sell_method == "CUSTOM":
-                            id = str(self.collectable_id_to_id[collectibleItemId])
-                            if not id in self.custom_values:
-                                self.logs.append(f"Failed to sell {self.collectable_id_to_name[collectibleItemId]} due to no custom value for the item.")
-                                self.resellable_count -= 1
+    def sell_all_items(self):   
+        try:
+           for item_id, item_info in self.inventory.items():
+                if not item_id in self.blacklist:
+                    for instance_id, instance_info in item_info.items():
+                        if instance_info['resellable']:
+                            resell_info = self.fetch_reseller(item_id)
+                            if resell_info:
+                                resell_price = resell_info['price']
+                                self.sell_item(resell_price, item_id, instance_id, instance_info['collectableProductId'])
                             else:
-                                price = self.custom_values[id]
-                        elif self.sell_method == "MEWTVALUES":
-                            mewt_data = self.find_mewtdata_by_collectable_item_id(collectibleItemId)
-                            if mewt_data["estimatedValue"] <= 0:
-                                self.logs.append(f"Failed to sell {self.collectable_id_to_name[collectibleItemId]} due mewt value being too low")
-                                self.resellable_count -= 1
-                            else:
-                                price = mewt_data["estimatedValue"] * self.mewtvalue_multiplier
-                        elif self.sell_method == "UNDERCUT":
-                            if collectibleItemId not in price_cache:
-                                recent_seller = self.fetch_reseller(collectibleItemId)
-                                if recent_seller["seller"]["sellerId"] == self.client["id"]:
-                                    price_cache[collectibleItemId] = recent_seller["price"]
-                                else:
-                                    price_cache[collectibleItemId] = (recent_seller["price"] - 1)
-
-                                price = price_cache[collectibleItemId]
-                            
-                        if price is not None:
-                            success = self.sell_item(price, collectibleItemId, collectibleInstanceId, self.collectable_instance_id_to_product_id[collectibleInstanceId])
-                            if success == True:
-                                self.logs.append(f"Successfully put {self.collectable_id_to_name[collectibleItemId]} on sale for {price}")
-                                self.onsale.append(collectibleInstanceId)
-                                self.resellable_count -= 1
-            except Exception as error:
-                print(error)
-
-
-    def update_inventory(self):
-        self.resellable_count = 0
-        self.inventory = {}
-        can_resell_collectables = []
-
-        if len(self.whitelist) > 0:
-            item_details = self.fetch_item_details_chunks(self.whitelist)
-            for item in item_details:
-                mewt_data = self.find_mewtdata_by_id(item["itemTargetId"])
-                if(mewt_data and mewt_data["resellable"] == True):
-                    if not item["itemTargetId"] in self.blacklist:
-                        self.collectable_id_to_name[item["collectibleItemId"]] = item["name"]
-                        self.id_to_name[item["itemTargetId"]] = item["name"]
-                        self.collectable_id_to_id[item["collectibleItemId"]] = item["itemTargetId"]
-                        if not item["collectibleItemId"] in can_resell_collectables:
-                            can_resell_collectables.append(item["collectibleItemId"])
-        elif self.sell_method == "CUSTOM":
-            item_details = self.fetch_item_details_chunks(list(self.custom_values.keys()))
-            for item in item_details:
-                mewt_data = self.find_mewtdata_by_id(item["itemTargetId"])
-                if(mewt_data and mewt_data["resellable"] == True):
-                    if not item["itemTargetId"] in self.blacklist:
-                        self.collectable_id_to_name[item["collectibleItemId"]] = item["name"]
-                        self.id_to_name[item["itemTargetId"]] = item["name"]
-                        self.collectable_id_to_id[item["collectibleItemId"]] = item["itemTargetId"]
-                        if not item["collectibleItemId"] in can_resell_collectables:
-                            can_resell_collectables.append(item["collectibleItemId"])
-        else:
-            for assettype in collectable_types:
-                inventory_data = self.fetch_inventory(assettype)
-                self.raw_inventory.extend(inventory_data)
-
-            for raw_item in self.raw_inventory:
-                if not raw_item["assetId"] in self.blacklist:
-                    mewt_data = self.find_mewtdata_by_id(raw_item["assetId"])
-                    if(mewt_data and mewt_data["resellable"] == True):
-                        self.collectable_id_to_name[raw_item["collectibleItemId"]] = raw_item["assetName"]
-                        self.id_to_name[raw_item["assetId"]] = raw_item["assetName"]
-                        self.collectable_id_to_id[raw_item["collectibleItemId"]] = raw_item["assetId"]
-                        if not raw_item["collectibleItemId"] in can_resell_collectables:
-                            can_resell_collectables.append(raw_item["collectibleItemId"])
-
-        self.logs.append(f"Found {len(can_resell_collectables)} different collectables that are resellable")
-        for item in can_resell_collectables:
-            resellable_data = self.fetch_item_resellable(item)
-            total_instance_copies = 0 
-            for instance in resellable_data:
-                if instance["isHeld"] == False and instance["saleState"] == "OffSale":
-                    if not item in self.inventory:
-                        self.inventory[item] = []
-                    self.resellable_count += 1
-                    total_instance_copies += 1
-                    self.collectable_instance_id_to_product_id[instance["collectibleInstanceId"]] = instance["collectibleProductId"]
-                    self.inventory[item].append(instance["collectibleInstanceId"])
-            self.logs.append(f"Loaded all resellable instances for {self.collectable_id_to_name[item]}; Copies: {total_instance_copies}")
-
-        self.logs.append(f"Successfully updated inventory. Resellable: {self.resellable_count}")
-
+                                print(f"Could not fetch resell info for item {item_id}. Skipping...")
+                        else:
+                            print(f"Item {item_id} is not resellable. Skipping...")
+        except Exception as error:
+            print(f"Error in sell_all_items: {error}")
 
     def infinite_thread(self, func, _time):
         def _func():
@@ -466,7 +324,6 @@ d88' d88'  88b`?888P' `?888P'888P'    `?8b      d8P' `?8b       `88b`?88P'`88b`?
                 func()
                 time.sleep(_time)
         threading.Thread(target=_func,).start()
-
 
 if __name__ == '__main__':
     Client()
