@@ -103,7 +103,6 @@ class Client:
         self.ready = False    
         self.sell_method = settings["SELL_METHOD"]
         self.custom_values = settings["CUSTOM_VALUES"]
-        self.mewtvalue_multiplier = settings["MEWTVALUE_MULTIPLIER"]
         self.whitelist = settings["WHITELIST"]
         self.blacklist = settings["BLACKLIST"]
         self.webhook_enabled = settings["WEBHOOK"]["ENABLED"]
