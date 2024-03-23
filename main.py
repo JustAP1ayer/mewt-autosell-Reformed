@@ -9,6 +9,7 @@ except ModuleNotFoundError as error:
 settings = json.load(open("settings.json", "r"))
 collectable_types = [
     8,
+    41,
     42,
     43,
     44,
@@ -24,7 +25,8 @@ collectable_types = [
     69,
     72,
     70,
-    71
+    71,
+    72,
 ]
 sell_methods = [
     "CUSTOM",
